@@ -1,3 +1,7 @@
+# 1. 모든 공을 없애면 게임 종료 (성공)
+# 2. 캐릭터는 공에 닿으면 게임 종료 (실패)
+# 3. 시간 제한 99초 초과 시, 게임 종료 (실패)
+
 import os
 import pygame
 
@@ -27,7 +31,7 @@ background = pygame.image.load(os.path.join(image_path, "background.png"))
 # 스테이지 만들기
 stage = pygame.image.load(os.path.join(image_path, "stage.png"))
 stage_size = stage.get_rect().size
-stage_height = stage_size[1]  # 스테이지 높이 위에 캐릭터를 뒤기 위해 사용
+stage_height = stage_size[1]  # 스테이지의 높이 위에 캐릭터를 두기 위해 사용
 
 # 캐릭터 만들기
 character = pygame.image.load(os.path.join(image_path, "character.png"))
@@ -82,6 +86,17 @@ balls.append({
 weapon_to_remove = -1
 ball_to_remove = -1
 
+# Font 정의
+game_font = pygame.font.Font(None, 40)
+total_time = 100
+start_ticks = pygame.time.get_ticks()  # 시작 시간 정의
+
+# 게임 종료 메시지
+# Time Over (시간초과 실패)
+# Mission Complete(성공)
+# Game Over (캐릭터가 공에 맞음)
+game_result = "Game Over"
+
 running = True  # 게임이 진행중인가?
 while running:
     dt = clock.tick(30)  # 게임화면의 초당 프레임 수를 설정
@@ -107,8 +122,6 @@ while running:
                 character_to_x_left = 0
             elif event.key == pygame.K_RIGHT:
                 character_to_x_right = 0
-            elif event.key == pygame.K_SPACE:
-                pass
 
     # 3. 게임 캐릭터 위치 정의
     character_x_pos += character_to_x_left + character_to_x_right
@@ -231,6 +244,11 @@ while running:
         del weapons[weapon_to_remove]
         weapon_to_remove = -1
 
+    # 모든 공을 없앤 경우 게임 종료 (성공)
+    if len(balls) == 0:
+        game_result = "Mission Complete"
+        running = False
+
     # 5. 화면에 그리기
     # 배경화면 그리기
     screen.blit(background, (0, 0))
@@ -249,9 +267,28 @@ while running:
     screen.blit(stage, (0, screen_height - stage_height))
     screen.blit(character, (character_x_pos, character_y_pos))
 
+    # 경과 시간 계산
+    elapsed_time = (pygame.time.get_ticks() - start_ticks) / 1000  # ms -> s
+    timer = game_font.render("Time : {}".format(
+        int(total_time - elapsed_time)), True, (255, 255, 255))
+    screen.blit(timer, (10, 10))
+
+    # 시간 초과 했다면
+    if total_time - elapsed_time <= 0:
+        game_result = "Time Over"
+        running = False
+
     pygame.display.update()  # 게임 화면 다시 그리기
     # pygame에서는 매 프레임 마다 화면을 다시 그러줘야 하기 때문에
 
+# 게임 오버 메세지
+msg = game_font.render(game_result, True, (255, 255, 0))  # 노란색
+msg_rect = msg.get_rect(center=(int(screen_width / 2), int(screen_height / 2)))
+screen.blit(msg, msg_rect)
+pygame.display.update()
+
+# 2초 대기
+pygame.time.delay(2000)
 
 # pygame 종료
 pygame.quit()
